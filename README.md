@@ -31,40 +31,41 @@ useful bignum arithmetic operators) must be invoked using the lua object
 notation.
 
 Usage:
-> require 'bnstring'
 
-> '10d' + '10d'
-20d
-
-> '1,000' + '10'
-'1,010'
-
-> '10d' ^ '10'
-10,000,000,000
-
-> 10 ^ 50
-1e+50
-
-> '10' ^ 50
-1e+50
-
-> '10d' ^ 50
-100,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000
-
-> ('4d'):lt(10)
-true
+    > require 'bnstring'
+    
+    > '10d' + '10d'
+    20d
+    
+    > '1,000' + '10'
+    '1,010'
+    
+    > '10d' ^ '10'
+    10,000,000,000
+    
+    > 10 ^ 50
+    1e+50
+    
+    > '10' ^ 50
+    1e+50
+    
+    > '10d' ^ 50
+    100,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000
+    
+    > ('4d'):lt(10)
+    true
 
 Operations:
-    a + b
-    a - b
-    -a
-    a * b
-    a ^ b
-    a // b
-    a % b
-    a:lt(b)
-    a:le(b)
-    a:eq(b)
-    a:ge(b)
-    a:gt(b)
-    a:powmod(b)
+ a + b
+ a - b
+ -a
+ a * b
+ a ^ b
+ a // b
+ a % b
+ a:lt(b)
+ a:le(b)
+ a:eq(b)
+ a:ge(b)
+ a:gt(b)
+ a:powmod(b)
