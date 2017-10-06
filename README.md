@@ -56,16 +56,16 @@ Usage:
     true
 
 Operations:
- a + b
- a - b
- -a
- a * b
- a ^ b
- a // b
- a % b
- a:lt(b)
- a:le(b)
- a:eq(b)
- a:ge(b)
- a:gt(b)
- a:powmod(b)
+* a + b
+* a - b
+* -a
+* a * b
+* a ^ b
+* a // b
+* a % b
+* a:lt(b)
+* a:le(b)
+* a:eq(b)
+* a:ge(b)
+* a:gt(b)
+* a:powmod(b)
