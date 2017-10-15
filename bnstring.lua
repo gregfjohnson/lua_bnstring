@@ -5,7 +5,7 @@
 Augment strings so that they can be used as integer bignums with
 standard arithmetic operations.
 
-(Requires lua 5.3 or greater.)
+(Tested on lua 5.1 through lua 5.3.)
 
 This module extends normal lua string-to-number conversion.
 
@@ -70,7 +70,13 @@ Operations:
     a:powmod(b)
 --]]
 
-local version = '0.1.0'
+local version = '0.1.1'
+
+local lua_version = tonumber(_VERSION:match('Lua (.*)'))
+
+local function int_div(num, den)
+    return math.floor(num / den)
+end
 
 local zero = ('0'):byte()
 local abs
@@ -194,9 +200,9 @@ function initialCleanup(str)
     return result
 end
 if TEST then
-    test:check('123', initialCleanup('123s'), 'initialCleanup(123s)')
-    test:check('-123', initialCleanup('-123s'), 'initialCleanup(-123s)')
-    test:check('-123', initialCleanup('   -123s'), 'initialCleanup(   -123s)')
+    test:check('123', initialCleanup('123d'), 'initialCleanup(123s)')
+    test:check('-123', initialCleanup('-123d'), 'initialCleanup(-123s)')
+    test:check('-123', initialCleanup('   -123d'), 'initialCleanup(   -123s)')
     test:check(false, pcall(function() initialCleanup('--4') end))
     test:check(false, pcall(function() initialCleanup('abc') end))
     test:check(false, pcall(function() initialCleanup('3.14') end))
@@ -241,12 +247,12 @@ if TESTX then
     test:check('456,789', finalCleanup('456789'), "finalCleanup('456789')")
     test:check('56,789', finalCleanup('56789'), "finalCleanup('56789')")
     test:check('6,789', finalCleanup('6789'), "finalCleanup('6789')")
-    test:check('789s', finalCleanup('789'), "finalCleanup('789')")
-    test:check('89s', finalCleanup('89'), "finalCleanup('89')")
-    test:check('9s', finalCleanup('9'), "finalCleanup('9')")
-    test:check('0s', finalCleanup('0'), "finalCleanup('0')")
-    test:check('-12s', finalCleanup('-12'), "finalCleanup('-12')")
-    test:check('-123s', finalCleanup('-123'), "finalCleanup('-123')")
+    test:check('789d', finalCleanup('789'), "finalCleanup('789')")
+    test:check('89d', finalCleanup('89'), "finalCleanup('89')")
+    test:check('9d', finalCleanup('9'), "finalCleanup('9')")
+    test:check('0d', finalCleanup('0'), "finalCleanup('0')")
+    test:check('-12d', finalCleanup('-12'), "finalCleanup('-12')")
+    test:check('-123d', finalCleanup('-123'), "finalCleanup('-123')")
     test:check('-1,234', finalCleanup('-1234'), "finalCleanup('-1,234')")
 end
 
@@ -321,7 +327,7 @@ function add(s1, s2)
         local value = carry + digit1 + digit2
 
         local digit = value % 10
-        carry = value // 10
+        carry = int_div(value, 10)
 
         result = digitToString(digit) .. result
 
@@ -360,7 +366,7 @@ function subtract(s1, s2)
         local value = digit1 - digit2 + borrow
 
         local digit = value % 10
-        borrow = value // 10
+        borrow = int_div(value, 10)
 
         result = digitToString(digit) .. result
 
@@ -391,7 +397,7 @@ function multSingleDigit(s, singleDigit)
         local value = carry + nthPower(s, i) * singleDigit
 
         local digit = value % 10
-        carry = value // 10
+        carry = int_div(value, 10)
 
         result = digitToString(digit) .. result
     end
@@ -520,7 +526,7 @@ function divideSingleDigit(num, den)
 
     for i = #num-1,0, -1 do
         local n = 10 * rem + nthPower(num, i)
-        result = result .. digitToString(n // den)
+        result = result .. digitToString(int_div(n, den))
         rem = n % den
     end
 
@@ -578,7 +584,7 @@ function divide(num, den)
 
         numprefix, num3 = nthPower(num, #den-1, #den), nthPower(num, #den-2)
 
-        local q = numprefix // den1
+        local q = int_div(numprefix, den1)
         local r = numprefix %  den1
 
         --printf("num %s, numtail %s, numprefix %d, den1 %d, q %d, r %d\n", 
@@ -622,21 +628,21 @@ if TESTX then
      test:check('3', divide('150', '50'), '150/50') -- ok
      test:check('8', divide('400', '50'), '400/50') -- ok
      test:check('8', divide('500', '59'), '500/59') -- ok
-     test:check(tostring(65536/64 | 0), divide('65536', '64'), '65536/64') -- ok
+     test:check('1024', divide('65536', '64'), '65536/64') -- ok
      local q,r
-     q,r = divide(' 10s', ' 8s') test:check( '1', q, '10/8');   test:check( '2', r, '10%8')
-     q,r = divide(' 10s', '-8s') test:check('-2', q, '10/-8');  test:check('-6', r, '10%-8')
-     q,r = divide('-10s', ' 8s') test:check('-2', q, '-10/8');  test:check( '6', r, '-10%8')
-     q,r = divide('-10s', '-8s') test:check( '1', q, '-10/-8'); test:check('-2', r, '-10%-8')
+     q,r = divide(' 10d', ' 8d') test:check( '1', q, '10/8');   test:check( '2', r, '10%8')
+     q,r = divide(' 10d', '-8d') test:check('-2', q, '10/-8');  test:check('-6', r, '10%-8')
+     q,r = divide('-10d', ' 8d') test:check('-2', q, '-10/8');  test:check( '6', r, '-10%8')
+     q,r = divide('-10d', '-8d') test:check( '1', q, '-10/-8'); test:check('-2', r, '-10%-8')
 
      -- positive divisor; sane modular arithmetic.
-     test:check('-2', divide('-10s',  '9s'), '-10 //  9')
+     test:check('-2', divide('-10d',  '9d'), '-10 //  9')
 
      -- negative divisor; remainder has same sign
      -- as divisor.
-     test:check('-2',  divide('10s', '-9s'), ' 10 // -9')
+     test:check('-2',  divide('10d', '-9d'), ' 10 // -9')
 
-     test:check( '1', divide('-10s', '-9s'), '-10 // -9')
+     test:check( '1', divide('-10d', '-9d'), '-10 // -9')
 end
 
 function pow(x, n)
@@ -698,7 +704,11 @@ string_mt.__unm  =  function(a)    return finalCleanup(negate(initialCleanup(a))
 string_mt.__mul  =  function(a, b) return finalCleanup(mult(initialCleanup(a), initialCleanup(b))) end
 string_mt.__pow  =  function(a, b) return finalCleanup(pow(initialCleanup(a), initialCleanup(b))) end
 string_mt.__mod  =  function(a, b) local _, result = divide(initialCleanup(a), initialCleanup(b)); return finalCleanup(result) end
-string_mt.__idiv = function(a, b) return finalCleanup(divide(initialCleanup(a), initialCleanup(b))) end
+if lua_version < 5.3 then
+    string_mt.__div = function(a, b) return finalCleanup(divide(initialCleanup(a), initialCleanup(b))) end
+else
+    string_mt.__idiv = function(a, b) return finalCleanup(divide(initialCleanup(a), initialCleanup(b))) end
+end
 string_mt.__index.lt = function(a, b) return lt(initialCleanup(a), initialCleanup(b)) end
 string_mt.__index.le = function(a, b) return le(initialCleanup(a), initialCleanup(b)) end
 string_mt.__index.eq = function(a, b) return eq(initialCleanup(a), initialCleanup(b)) end
@@ -707,14 +717,17 @@ string_mt.__index.gt = function(a, b) return gt(initialCleanup(a), initialCleanu
 string_mt.__index.powmod = function(a, b, c) return finalCleanup(powmod(initialCleanup(a), initialCleanup(b), initialCleanup(c))) end
 
 if TESTX then
-    test:check('1s',      '-3s' + '4s', 'add metatable')
-    test:check('-7s',     '-3s' - '4s', 'subtract metatable')
-    test:check('7s',    - '-7s', 'subtract metatable')
-    test:check('77s',     '11s' * '7s', 'multiply metatable')
-    test:check('5s',      '10s' // '2s', 'divide metatable')
-    test:check('3s',      '13s' % '5s', 'mod metatable')
-    test:check('100,000', '10s' ^ '5s', '10^5')
-    test:check(true, ('10s'):lt('50s'), 'lt')
-    test:check('1s', ('10s'):powmod('5s', '3s'), 'powmod')
-    test:check(true, ('10s'):lt('15s'), 'lt')
+    test:check('1d',      '-3d' + '4d', 'add metatable')
+    test:check('-7d',     '-3d' - '4d', 'subtract metatable')
+    test:check('7d',    - '-7d', 'subtract metatable')
+    test:check('77d',     '11d' * '7d', 'multiply metatable')
+    local div =     lua_version < 5.3
+                and function(n,d) return n / d end
+                or  load('return function (n,d) return n // d end')()
+    test:check('5d',      div('10d', '2d'), 'divide metatable')
+    test:check('3d',      '13d' % '5d', 'mod metatable')
+    test:check('100,000', '10d' ^ '5d', '10^5')
+    test:check(true, ('10d'):lt('50d'), 'lt')
+    test:check('1d', ('10d'):powmod('5d', '3d'), 'powmod')
+    test:check(true, ('10d'):lt('15d'), 'lt')
 end

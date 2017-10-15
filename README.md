@@ -5,7 +5,7 @@ Integer bignums for lua
 Augment strings so that they can be used as integer bignums with
 standard arithmetic operations.
 
-(Requires lua 5.3 or greater.)
+(Tested on lua 5.1 through lua 5.3.)
 
 This module extends normal lua string-to-number conversion.
 
