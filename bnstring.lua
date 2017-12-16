@@ -199,7 +199,7 @@ function initialCleanup(str)
     result = cleanup(result)
     return result
 end
-if TEST then
+if TESTX then
     test:check('123', initialCleanup('123d'), 'initialCleanup(123s)')
     test:check('-123', initialCleanup('-123d'), 'initialCleanup(-123s)')
     test:check('-123', initialCleanup('   -123d'), 'initialCleanup(   -123s)')
@@ -214,7 +214,7 @@ if TEST then
 end
 
 -- assume str matches "^%-?[0-9]+$".
--- return nn,nnn,nnn if at least 3 digits, or nns
+-- return nn,nnn,nnn if at least 3 digits, or nnd
 --
 function finalCleanup(str)
     local result
@@ -670,30 +670,87 @@ if TESTX then
     test:check('100000', pow('10', '5'), '10^5')
 end
 
-function powmod(x, n, m)
+local function multmod(x,y, m)
     local _
+    if le(m, x) then _,x = divide(x,m) end
+    if le(m, y) then _,y = divide(y,m) end
+    local _,result = divide(mult(x,y), m)
+    return result
+end
+
+function powmod(x, n, m)
     assert(not isNeg(n), 'negative exponent')
+    local _, y, z
+    if le(m, x) then _,x = divide(x,m) end
+
     local a = '1'
 
-    -- result = a * x^n
+    -- invariant:  desired_result = a * x^n
+    --
     while not isZero(n) do
-        if isEven(n) then
-            -- x = (x^2)^(n/2)
-            _, x = divide(mult(x, x), m)
-            n = divide(n, '2')
+        -- is n divisible by 10?
+        --
+        if n:sub(-1) == '0' then
+            -- x = (x^10)^(n/10).
+
+            -- n = n / 10; trim off trailing zero to divide by 10..
+            n = n:sub(1,-2)
+
+            -- x = x^10:  y=x*x; z = y*y; x = z*z*y.
+            --
+            y = multmod(x, x, m); z = multmod(y, y, m)
+            x = multmod(multmod(z, z, m), y, m)
+
         else
-            -- result = a * x * x^(n-1)
-            _, a = divide(mult(a, x), m)
-            n = subtract(n, '1')
+            -- k = n % 10, k ~= 0.
+            -- desired_result = a * x^k * x^(n-k)
+            --
+            k = n:sub(-1)
+
+            -- n = n - k; last digit of n is k, so do the subract by
+            --            substituting '0' for last digit.
+            --
+            n = n:gsub('.$', '0')
+
+            if     k == '1' then a = multmod(a, x, m)
+            elseif k == '2' then a = multmod(a, multmod(x, x, m), m)
+            elseif k == '3' then a = multmod(a, multmod(x, multmod(x, x, m), m), m)
+            elseif k == '4' then y = multmod(x, x, m); a = multmod(a, multmod(y, y, m), m)
+            elseif k == '5' then y = multmod(x, x, m); a = multmod(a, multmod(y, multmod(y, x, m), m), m)
+            elseif k == '6' then y = multmod(x, x, m); a = multmod(a, multmod(y, multmod(y, y, m), m), m)
+            elseif k == '7' then y = multmod(multmod(x, x, m), x, m); a = multmod(a, multmod(y, multmod(y, x, m), m), m)
+            elseif k == '8' then y = multmod(x, x, m); z = multmod(y, y, m); a = multmod(a, multmod(z, z, m), m)
+            elseif k == '9' then y = multmod(multmod(x, x, m), x, m); a = multmod(a, multmod(y, multmod(y, y, m), m), m)
+            end
+
+            n = n:match('.$', '0')
+            _,a = divide(a, m)
         end
     end
 
     return a
 end
-if TESTX then
-    test:check('1', powmod('2', '2', '3'), '2^2 mod 3')
+if TEST then
+    test:check('1', powmod('2', '0', '3'), '2^0 mod 3')
+    test:check('2', powmod('2', '1', '3'), '2^1 mod 3')
+    test:check('4', powmod('2', '2', '8'), '2^2 mod 8')
     test:check('2', powmod('2', '3', '3'), '2^3 mod 3')
     test:check('1', powmod('10', '5', '3'), '10^5 mod 3')
+    test:check('1024', powmod('2', '10', '10000'), '2^10 mod 10000')
+
+    local google = '1'; for i = 1, 100 do google = google..'0' end
+    test:check(google, powmod('10', '100', google..'0'), '10^100 mod (10*google)')
+
+    test:check(  '1', powmod('2', '0', '10000'), '2^0 mod 10000')
+    test:check(  '2', powmod('2', '1', '10000'), '2^1 mod 10000')
+    test:check(  '4', powmod('2', '2', '10000'), '2^2 mod 10000')
+    test:check(  '8', powmod('2', '3', '10000'), '2^3 mod 10000')
+    test:check( '16', powmod('2', '4', '10000'), '2^4 mod 10000')
+    test:check( '32', powmod('2', '5', '10000'), '2^5 mod 10000')
+    test:check( '64', powmod('2', '6', '10000'), '2^6 mod 10000')
+    test:check('128', powmod('2', '7', '10000'), '2^7 mod 10000')
+    test:check('256', powmod('2', '8', '10000'), '2^8 mod 10000')
+    test:check('512', powmod('2', '9', '10000'), '2^9 mod 10000')
 end
 
 local string_mt = getmetatable('a')
