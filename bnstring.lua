@@ -647,27 +647,56 @@ end
 
 function pow(x, n)
     assert(not isNeg(n), 'negative exponent')
+    local _, y, z
+
     local a = '1'
 
-    -- result = a * x^n
+    -- invariant:  desired_result = a * x^n
+    --
     while not isZero(n) do
-        if isEven(n) then
-            -- x = (x^2)^(n/2)
-            x = mult(x, x)
-            n = divide(n, '2')
+        -- is n divisible by 10?
+        --
+        if n:sub(-1) == '0' then
+            -- x = (x^10)^(n/10).
+
+            -- n = n / 10; trim off trailing zero to divide by 10..
+            n = n:sub(1,-2)
+
+            -- x = x^10:  y=x*x; z = y*y; x = z*z*y.
+            --
+            y = mult(x, x); z = mult(y, y)
+            x = mult(mult(z, z), y)
+
         else
-            -- result = a * x * x^(n-1)
-            a = mult(a, x)
-            n = subtract(n, '1')
+            -- k = n % 10, k ~= 0.
+            -- desired_result = a * x^k * x^(n-k)
+            --
+            k = n:sub(-1)
+
+            -- n = n - k; last digit of n is k, so do the subract by
+            --            substituting '0' for last digit.
+            --
+            n = n:gsub('.$', '0')
+
+            if     k == '1' then a = mult(a, x)
+            elseif k == '2' then a = mult(a, mult(x, x))
+            elseif k == '3' then a = mult(a, mult(x, mult(x, x)))
+            elseif k == '4' then y = mult(x, x); a = mult(a, mult(y, y))
+            elseif k == '5' then y = mult(x, x); a = mult(a, mult(y, mult(y, x)))
+            elseif k == '6' then y = mult(x, x); a = mult(a, mult(y, mult(y, y)))
+            elseif k == '7' then y = mult(mult(x, x), x); a = mult(a, mult(y, mult(y, x)))
+            elseif k == '8' then y = mult(x, x); z = mult(y, y); a = mult(a, mult(z, z))
+            elseif k == '9' then y = mult(mult(x, x), x); a = mult(a, mult(y, mult(y, y)))
+            end
         end
     end
 
     return a
 end
 if TESTX then
-    test:check('4', pow('2', '2'), '2^2')
-    test:check('8', pow('2', '3'), '2^3')
-    test:check('100000', pow('10', '5'), '10^5')
+    --test:check('4', pow('2', '2'), '2^2')
+    --test:check('8', pow('2', '3'), '2^3')
+    --test:check('100000', pow('10', '5'), '10^5')
 end
 
 local function multmod(x,y, m)
@@ -685,7 +714,7 @@ function powmod(x, n, m)
 
     local a = '1'
 
-    -- invariant:  desired_result = a * x^n
+    -- invariant:  desired_result = (a * x^n) mod m
     --
     while not isZero(n) do
         -- is n divisible by 10?
@@ -723,14 +752,13 @@ function powmod(x, n, m)
             elseif k == '9' then y = multmod(multmod(x, x, m), x, m); a = multmod(a, multmod(y, multmod(y, y, m), m), m)
             end
 
-            n = n:match('.$', '0')
             _,a = divide(a, m)
         end
     end
 
     return a
 end
-if TEST then
+if TESTX then
     test:check('1', powmod('2', '0', '3'), '2^0 mod 3')
     test:check('2', powmod('2', '1', '3'), '2^1 mod 3')
     test:check('4', powmod('2', '2', '8'), '2^2 mod 8')
